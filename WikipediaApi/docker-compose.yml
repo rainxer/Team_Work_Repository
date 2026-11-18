@@ -1,0 +1,32 @@
+services:
+  db:
+    image: mariadb:10.11
+    container_name: wikipedia_db
+    command: --lower-case-table-names=1
+    environment:
+      MARIADB_ROOT_PASSWORD: root
+      MARIADB_DATABASE: Wikipedia
+    ports:
+      - "3307:3306"
+    volumes:
+      - dbdata:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  api:
+    build: .
+    container_name: wikipedia_api
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: "Server=db;Port=3306;Database=Wikipedia;User=root;Password=root;"
+    ports:
+      - "5040:5040"
+
+volumes:
+  dbdata:
